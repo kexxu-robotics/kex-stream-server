@@ -1,0 +1,25 @@
+port: 443
+domain: <mydomain.com here>
+staticpath: <www static folder here>
+apipass: <password here>
+eventstreamid: event-stream-1
+
+postgres:
+  host: <postgres domain.com here>
+  db: <postgres database here>
+  user: <postgres username here>
+  password: <postgres password here>
+
+mqtt:
+  enabled: true/false
+  username: <mqtt username here>
+  password: <mqtt password here>
+  clientid: event-stream-1
+  servers:
+    - mydomain.com:8000
+  serverssecure:
+    - mydomain.com:8443
+  webservers:
+    - mydomain.com:3000
+  webserverssecure:
+    - mydomain.com:3443

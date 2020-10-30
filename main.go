@@ -41,10 +41,14 @@ type Conf struct {
 	}
 
 	Mqtt struct {
-		Username string
-		Password string
-		ClientId string
-		Servers  []string
+		Enabled          bool
+		Username         string
+		Password         string
+		ClientId         string
+		Servers          []string
+		ServersSecure    []string
+		WebServers       []string
+		WebServersSecure []string
 	}
 }
 
@@ -149,33 +153,62 @@ func main() {
 	}
 	fmt.Println(postgresTest)
 
-	// init mqtt
-	// https://github.com/eclipse/paho.mqtt.golang/blob/master/cmd/simple/main.go
-	//mqtt.DEBUG = log.New(os.Stdout, "", 0)
-	mqtt.ERROR = log.New(os.Stdout, "", 0)
-	opts := mqtt.NewClientOptions().AddBroker("tcp://" + conf.Mqtt.Servers[0]).SetClientID(conf.Mqtt.ClientId)
-	opts.SetUsername(conf.Mqtt.Username)
-	opts.SetPassword(conf.Mqtt.Password)
-	opts.SetKeepAlive(10 * time.Minute)
-	opts.SetDefaultPublishHandler(mqttDefaultPublish)
-	opts.SetPingTimeout(1 * time.Second)
+	// tests to check the server is running
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/test", checkAuthorized(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, "OK")
+	}))
+	// test to check the database connection is working
+	mux.HandleFunc("/api/testDb", checkAuthorized(func(w http.ResponseWriter, r *http.Request) {
+		var postgresTest string
+		err = conn.QueryRow(context.Background(), "select 'OK'").Scan(&postgresTest)
+		if err != nil {
+			fmt.Fprint(w, "ERROR! test call to Postgresql failed")
+			return
+		}
+		fmt.Fprint(w, "OK")
+	}))
 
-	mqttClient := mqtt.NewClient(opts)
-	if token := mqttClient.Connect(); token.Wait() && token.Error() != nil {
-		panic(token.Error())
+	// init eventStream
+	eventStream := eventstream.EventStream{
+		Conn:          conn,
+		EventStreamId: conf.EventStreamId,
+	}
+
+	// init mqtt
+	if conf.Mqtt.Enabled {
+		// https://github.com/eclipse/paho.mqtt.golang/blob/master/cmd/simple/main.go
+		//mqtt.DEBUG = log.New(os.Stdout, "", 0)
+		mqtt.ERROR = log.New(os.Stdout, "", 0)
+		opts := mqtt.NewClientOptions().AddBroker("tcp://" + conf.Mqtt.Servers[0]).SetClientID(conf.Mqtt.ClientId)
+		opts.SetUsername(conf.Mqtt.Username)
+		opts.SetPassword(conf.Mqtt.Password)
+		opts.SetKeepAlive(10 * time.Minute)
+		opts.SetDefaultPublishHandler(mqttDefaultPublish)
+		opts.SetPingTimeout(1 * time.Second)
+
+		mqttClient := mqtt.NewClient(opts)
+		if token := mqttClient.Connect(); token.Wait() && token.Error() != nil {
+			panic(token.Error())
+		}
+
+		eventStream.MqttClient = &mqttClient
+
+		// test to check the mqtt connection is working
+		mux.HandleFunc("/api/testMqtt", checkAuthorized(func(w http.ResponseWriter, r *http.Request) {
+			err := mqttClient.Publish("/test", 1, false, fmt.Sprint(time.Now()))
+			if err != nil {
+				fmt.Fprint(w, "ERROR! test call to Mqtt failed")
+				return
+			}
+			fmt.Fprint(w, "OK")
+		}))
 	}
 
 	// debug
 	//if token := mqttClient.Subscribe("eventstream/#", 2, mqttDefaultPublish); token.Wait() && token.Error() != nil {
 	//	fmt.Println(token.Error())
 	//}
-
-	// init eventStream
-	eventStream := eventstream.EventStream{
-		Conn:          conn,
-		MqttClient:    &mqttClient,
-		EventStreamId: conf.EventStreamId,
-	}
 
 	// init origin security
 	// this prevents origins spamming the service
@@ -194,29 +227,6 @@ func main() {
 		Secure:      &originSecure,
 		EventStream: &eventStream,
 	}
-
-	// tests to check if everything is running
-	mux := http.NewServeMux()
-	mux.HandleFunc("/api/test", checkAuthorized(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, "OK")
-	}))
-	mux.HandleFunc("/api/testDb", checkAuthorized(func(w http.ResponseWriter, r *http.Request) {
-		var postgresTest string
-		err = conn.QueryRow(context.Background(), "select 'OK'").Scan(&postgresTest)
-		if err != nil {
-			fmt.Fprint(w, "ERROR! test call to Postgresql failed")
-			return
-		}
-		fmt.Fprint(w, "OK")
-	}))
-	mux.HandleFunc("/api/testMqtt", checkAuthorized(func(w http.ResponseWriter, r *http.Request) {
-		err := mqttClient.Publish("/test", 1, false, fmt.Sprint(time.Now()))
-		if err != nil {
-			fmt.Fprint(w, "ERROR! test call to Mqtt failed")
-			return
-		}
-		fmt.Fprint(w, "OK")
-	}))
 
 	// eventstream endpoints
 	mux.HandleFunc("/api/eventstream/addEvent", eventsHandler.AddEvent)
