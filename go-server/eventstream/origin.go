@@ -12,6 +12,25 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
+/*
+CREATE TABLE public.origins
+(
+    id character varying(128) NOT NULL,
+    added_iter bigserial NOT NULL,
+    added_timestamp TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    type character varying(128) NOT NULL,
+    version character varying(128) NOT NULL,
+    pass_hash character varying(128),
+    owner_email character varying(512),
+    PRIMARY KEY (id)
+);
+
+ALTER TABLE public.origins
+    OWNER to "eventstreamAdmin";
+
+GRANT SELECT ON TABLE public.origins TO "eventstream";
+*/
+
 type Origin struct {
 	Id       string
 	PassHash string
