@@ -1,4 +1,4 @@
-module github.com/kexxu-robotics/kex-stream-server
+module github.com/kexxu-robotics/kex-stream-server/go-server
 
 go 1.15
 
