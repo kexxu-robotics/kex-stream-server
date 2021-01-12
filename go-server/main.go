@@ -15,8 +15,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/kexxu-robotics/kex-stream-server/eventstream"
-	//"github.com/kexxu-robotics/kex-stream-server/user"
+	"github.com/kexxu-robotics/kex-stream-server/go-server/eventstream"
 )
 
 // example dev certs:
