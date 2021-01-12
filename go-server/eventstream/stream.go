@@ -131,6 +131,7 @@ func (es *EventStream) SaveMessage(em EventMessage) (EventMessage, error) {
 		&em.Id,
 	)
 	if err != nil {
+		fmt.Println(err)
 		return em, err
 	}
 	if em.Id == 0 {
