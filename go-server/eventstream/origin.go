@@ -1,20 +1,5 @@
 package eventstream
 
-/*
-CREATE TABLE public.origins
-(
-    id character varying(256) COLLATE pg_catalog."default" NOT NULL,
-    pass_hash character varying(256) COLLATE pg_catalog."default",
-    CONSTRAINT origins_pkey PRIMARY KEY (id)
-)
-
-TABLESPACE pg_default;
-
-ALTER TABLE public.origins
-    OWNER to postgres;
-
-*/
-
 import (
 	"context"
 	"crypto/sha256"

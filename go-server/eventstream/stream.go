@@ -113,7 +113,7 @@ func (es *EventStream) SaveMessage(em EventMessage) (EventMessage, error) {
 	// try to save into the database
 	err := es.Conn.QueryRow(
 		context.Background(),
-		"INSERT INTO events (event_id, creation_time_unix_sec, origin_id, origin_iter, origin_group_id, origin_build_version, destination_id, event_time_unix_sec, event_type, event_subtype, event_version, payload_json) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id;",
+		"INSERT INTO events (event_id, creation_time_unix_sec, origin_id, origin_iter, origin_group_id, origin_build_version, destination_id, event_time_unix_sec, event_type, event_subtype, event_version, payload_json) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id;",
 
 		em.EventId,
 		em.CreationTimeUnixSec,

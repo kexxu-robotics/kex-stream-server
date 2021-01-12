@@ -218,7 +218,7 @@ func main() {
 	}
 	go originSecure.ReloadOriginsChron()
 
-	// init device handler
+	// init eventstream handler
 	eventsHandler := eventstream.Handler{
 		BaseUrl:     conf.BaseUrl,
 		StaticPath:  conf.StaticPath,
