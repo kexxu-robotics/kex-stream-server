@@ -40,13 +40,18 @@ func (h *Handler) AddEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	originId := r.FormValue("id")
+	destId := r.FormValue("destId")
+	// if no destination is set, post to yourself
+	if destId == "" {
+		destId = originId
+	}
 	//apiVersion := r.FormValue("v")
 	buildVersion := r.FormValue("build")
 	if buildVersion == "" {
 		buildVersion = "not set"
 	}
-	fmt.Println("AddEvent originId: ", originId)
-	secure, err, msg := h.Secure.Check(originId, r.FormValue("p"))
+	fmt.Println("AddEvent originId:", originId, "destId:", destId)
+	secure, err, msg := h.Secure.Check(destId, r.FormValue("p"))
 	if !secure {
 		h.debugMsg(msg)
 		http.Error(w, "not authorized", 401)
@@ -76,7 +81,8 @@ func (h *Handler) AddEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	event.OriginId = originId // just making sure you post to the same origin as provided in the request
+	event.OriginId = originId    // just making sure you post to the same origin as provided in the request
+	event.DestinationId = destId // just making sure you post to the same destination as provided in the request
 	eventSaved, err := h.EventStream.SaveMessage(event)
 	if err != nil {
 		h.debugMsg("error saving EventMessage:", err)
@@ -115,14 +121,14 @@ func (h *Handler) GetOriginEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	originId := r.FormValue("id")
+	destId := r.FormValue("id")
 	//apiVersion := r.FormValue("v")
 	buildVersion := r.FormValue("build")
 	if buildVersion == "" {
 		buildVersion = "not set"
 	}
-	fmt.Println("GetOriginEvents originId: ", originId)
-	secure, err, msg := h.Secure.Check(originId, r.FormValue("p"))
+	fmt.Println("GetOriginEvents destId: ", destId)
+	secure, err, msg := h.Secure.Check(destId, r.FormValue("p"))
 	if !secure {
 		h.debugMsg(msg)
 		http.Error(w, "not authorized", 401)
@@ -157,15 +163,15 @@ func (h *Handler) GetOriginEvents(w http.ResponseWriter, r *http.Request) {
 	// if no eventType is provided, get all eventMessages from this device
 	if eventType == "" {
 		if lastId != 0 {
-			ms, err = h.EventStream.GetByOriginIdPage(originId, newestId, lastId, limit)
+			ms, err = h.EventStream.GetByDestinationIdPage(destId, newestId, lastId, limit)
 		} else {
-			ms, err = h.EventStream.GetByOriginId(originId, newestId, limit)
+			ms, err = h.EventStream.GetByDestinationId(destId, newestId, limit)
 		}
 	} else {
 		if lastId != 0 {
-			ms, err = h.EventStream.GetByOriginIdAndEventTypePage(originId, eventType, newestId, lastId, limit)
+			ms, err = h.EventStream.GetByDestinationIdAndEventTypePage(destId, eventType, newestId, lastId, limit)
 		} else {
-			ms, err = h.EventStream.GetByOriginIdAndEventType(originId, eventType, newestId, limit)
+			ms, err = h.EventStream.GetByDestinationIdAndEventType(destId, eventType, newestId, limit)
 		}
 	}
 	if err != nil {
